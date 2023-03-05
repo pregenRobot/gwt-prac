@@ -19,6 +19,8 @@ import java.util.Map;
 public class MyWebApp implements EntryPoint {
   private final GreetingServiceAsync greetingService = GWT.create(GreetingService.class);
 
+  private final TimeAndClockServiceAsync timeAndClockService = GWT.create(TimeAndClockService.class);
+
   PhasePane currPane;
   Button currPhaseButton;
 
@@ -64,7 +66,7 @@ public class MyWebApp implements EntryPoint {
     RootPanel.get("switcher").add(phase3Button);
 
     PhasePane phase1Widget = new Phase1(greetingService);
-    PhasePane phase2Widget = new Phase2(greetingService);
+    PhasePane phase2Widget = new Phase2(timeAndClockService);
     PhasePane phase3Widget = new Phase3(greetingService);
 
 

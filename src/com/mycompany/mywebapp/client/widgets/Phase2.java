@@ -11,12 +11,15 @@ import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.DialogBox;
 import com.google.gwt.user.client.ui.HTML;
+import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.mycompany.mywebapp.client.GreetingServiceAsync;
+import com.mycompany.mywebapp.client.TimeAndClockServiceAsync;
 import com.mycompany.mywebapp.shared.FieldVerifier;
+import com.mycompany.mywebapp.shared.TACSMessage;
 
 public class Phase2 extends PhasePane{
 
@@ -25,182 +28,80 @@ public class Phase2 extends PhasePane{
       + "connection and try again.";
 
 
-    public Phase2(GreetingServiceAsync greetingService){
+    DialogBox clientLogDialogBox;
+
+    private void log(String message,String color){
+      HTML logMessage = new HTML("<div style='"+color+";'>" + message + " </div>");
+      
+      clientLogDialogBox.add(logMessage);
+    }
+
+    public Phase2(TimeAndClockServiceAsync timeAndClock){
 
         super("Phase 2 Message Passing System");
 
 
         final Button sendButton = new Button("Send");
-        sendButton.addStyleName("sendButton");
+        final Button receiveButton = new Button("Receive");
 
-        final Button stopButton = new Button("Stop All");
-        stopButton.getElement().setId("stopButton");
+        int pid = 10;
 
-        final TextBox nameField = new TextBox();
-        nameField.setText("GWT User");
-        nameField.setFocus(true);
-        nameField.selectAll();
+        final HTML myProcessIdDisplayer =  new HTML("<h3>My process ID is: " + pid +  "<h3>");
 
-        final Label errorLabel = new Label();
+        final TextBox messageTextBox = new TextBox();
+        final HTML messageTextBoxLabel = new HTML("<h4>Message to send</h4>");
+        messageTextBox.setText("Hello!");
 
-        // RootPanel.get("nameFieldContainer").add(nameField);
-        // RootPanel.get("errorLabelContainer").add(errorLabel);
-        // RootPanel.get("sendButtonContainer").add(sendButton);
-        // RootPanel.get("stopButtonContainer").add(stopButton);
-        mainPanel.add(nameField);
-        mainPanel.add(errorLabel);
-        mainPanel.add(sendButton);
-        mainPanel.add(stopButton);
+        final TextBox processIdTextBox = new TextBox();
+        final HTML processIdTextBoxLabel = new HTML("<h4>Target process ID</h4>");
 
-        final DialogBox sendDialogBox = new DialogBox();
-        sendDialogBox.setText("Remote Procedure Call");
-        sendDialogBox.setAnimationEnabled(true);
+
+        clientLogDialogBox = new DialogBox();
+        clientLogDialogBox.setText("Client Log");
+        clientLogDialogBox.setAnimationEnabled(true);
         VerticalPanel dialogVPanel = new VerticalPanel();
-        dialogVPanel.add(new HTML("<b>Sending name to the server:</b>"));
-        final Button sendCloseButton = new Button("Close");
-        sendCloseButton.getElement().setId("closeButton");
-        final Label sendTextToServerLabel = new Label();
-        final HTML sendServerResponseLabel = new HTML();
-        dialogVPanel.add(sendTextToServerLabel);
-        dialogVPanel.add(new HTML("<br><b>Server replies:</b>"));
-        dialogVPanel.add(sendServerResponseLabel);
-        dialogVPanel.setHorizontalAlignment(VerticalPanel.ALIGN_RIGHT);
-        dialogVPanel.add(sendCloseButton);
-        sendDialogBox.setWidget(dialogVPanel);
+        clientLogDialogBox.add(dialogVPanel);
 
-        final DialogBox stopDialogBox = new DialogBox();
-        stopDialogBox.setText("Stop Remote Procedure Call");
-        stopDialogBox.setAnimationEnabled(true);
-        VerticalPanel stopVPanel = new VerticalPanel();
-        stopVPanel.addStyleName("dialogVPanel");
-        stopVPanel.add(new HTML("Server responded:"));
-        final Button stopCloseButton = new Button("Close");
-        stopCloseButton.getElement().setId("stopCloseButton");
-        final HTML stopServerResponseLabel = new HTML();
-        stopVPanel.add(stopServerResponseLabel);
-        stopVPanel.setHorizontalAlignment(VerticalPanel.ALIGN_RIGHT);
-        stopVPanel.add(stopCloseButton);
-        stopDialogBox.setWidget(stopVPanel);
+        final HorizontalPanel buttons = new HorizontalPanel();
+        buttons.add(sendButton);
+        buttons.add(receiveButton);
 
 
-        // Add a handler to close the DialogBox
-        sendCloseButton.addClickHandler(new ClickHandler() {
-        public void onClick(ClickEvent event) {
-            sendDialogBox.hide();
-            sendButton.setEnabled(true);
-            sendButton.setFocus(true);
-        }
+        mainPanel.add(myProcessIdDisplayer);
+        mainPanel.add(messageTextBoxLabel);
+        mainPanel.add(messageTextBox);
+        mainPanel.add(processIdTextBoxLabel);
+        mainPanel.add(processIdTextBox);
+        mainPanel.add(buttons);
+        mainPanel.add(clientLogDialogBox);
+
+
+        receiveButton.addClickHandler(new ClickHandler(){
+
+          @Override
+          public void onClick(ClickEvent event){
+            //pass
+          }
+
         });
 
-        stopCloseButton.addClickHandler(new ClickHandler() {
-        public void onClick(ClickEvent event){
-            stopDialogBox.hide();
-            stopButton.setEnabled(true);
-        }
+        sendButton.addClickHandler(new ClickHandler(){
+
+          @Override
+          public void onClick(ClickEvent event){
+            TACSMessage tacsMessage = new TACSMessage();
+            tacsMessage.message = messageTextBox.getText();
+            tacsMessage.sourcePid = pid;
+
+            Integer targetPid;
+
+            try{
+              targetPid = Integer.parseInt(processIdTextBox.getText());
+            }catch(Exception e){
+              log("Target Pid cannot be coersced into an Integer","red");
+            }
+          }
         });
-
-
-
-        class StopHandler implements ClickHandler, KeyUpHandler{
-        private void tellServerToStopAllGreetings(){
-            stopButton.setEnabled(false);
-            greetingService.stopAllGreetings(new AsyncCallback<String>() {
-            public void onFailure(Throwable caught){
-                stopDialogBox.setText("Remote procedure call - Failure");
-                stopServerResponseLabel.addStyleName("serverResponseLabelError");
-                stopServerResponseLabel.setHTML(SERVER_ERROR);
-                stopDialogBox.center();
-                stopCloseButton.setFocus(true);
-            }
-
-            public void onSuccess(String result){
-                sendDialogBox.setText("Remote Procedure Call");
-                stopServerResponseLabel.removeStyleName("serverResponseLabelError");
-                //stopServerResponseLabel.setHTML("STOPPED!");
-                stopServerResponseLabel.setHTML(result);
-                stopDialogBox.center();
-                stopCloseButton.setFocus(true);
-            }
-            });
-        }
-
-        public void onClick(ClickEvent event){
-            tellServerToStopAllGreetings();
-        }
-
-        public void onKeyUp(KeyUpEvent event){
-            if(event.getNativeKeyCode() == KeyCodes.KEY_ENTER){
-            tellServerToStopAllGreetings();
-            }
-        }
-
-        }
-
-        // Create a handler for the sendButton and nameField
-        class SendHandler implements ClickHandler, KeyUpHandler {
-        /**
-        * Fired when the user clicks on the sendButton.
-        */
-        public void onClick(ClickEvent event) {
-            sendNameToServer();
-            sendButton.setEnabled(false);
-        }
-
-        /**
-        * Fired when the user types in the nameField.
-        */
-        public void onKeyUp(KeyUpEvent event) {
-            if (event.getNativeKeyCode() == KeyCodes.KEY_ENTER) {
-            sendNameToServer();
-            }
-        }
-
-        /**
-        * Send the name from the nameField to the server and wait for a response.
-        */
-
-
-        private void sendNameToServer() {
-            // First, we validate the input.
-            errorLabel.setText("");
-            String textToServer = nameField.getText();
-            if (!FieldVerifier.isValidName(textToServer)) {
-            errorLabel.setText("Please enter at least four characters");
-            return;
-            }
-            
-            // Then, we send the input to the server.
-            sendButton.setEnabled(false);
-            sendTextToServerLabel.setText(textToServer);
-            sendServerResponseLabel.setText("");
-            greetingService.greetServer(textToServer, new AsyncCallback<String>() {
-            public void onFailure(Throwable caught) {
-                // Show the RPC error message to the user
-                sendDialogBox.setText("Remote Procedure Call - Failure");
-                sendServerResponseLabel.addStyleName("serverResponseLabelError");
-                sendServerResponseLabel.setHTML(SERVER_ERROR);
-                sendDialogBox.center();
-                sendCloseButton.setFocus(true);
-            }
-
-            public void onSuccess(String result) {
-                sendDialogBox.setText("Remote Procedure Call");
-                sendServerResponseLabel.removeStyleName("serverResponseLabelError");
-                sendServerResponseLabel.setHTML(result);
-                sendDialogBox.center();
-                sendCloseButton.setFocus(true);
-            }
-            });
-        }
-        }
-
-        // Add a handler to send the name to the server
-        SendHandler sendHandler = new SendHandler();
-        StopHandler stopHandler = new StopHandler();
-        sendButton.addClickHandler(sendHandler);
-        stopButton.addClickHandler(stopHandler);
-        nameField.addKeyUpHandler(sendHandler);
-
     }
 
 }

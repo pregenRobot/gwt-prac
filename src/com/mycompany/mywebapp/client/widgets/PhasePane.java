@@ -3,11 +3,13 @@ package com.mycompany.mywebapp.client.widgets;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.VerticalPanel;
+import java.util.logging.Logger;
 
 public abstract class PhasePane extends Composite{
     
     VerticalPanel mainPanel;
     String phaseTitle;
+    Logger logger;
     
 
     PhasePane(String phaseTitle){
@@ -19,6 +21,7 @@ public abstract class PhasePane extends Composite{
         this.phaseTitle = phaseTitle;
         titleElement.setHTML("<h1>" + this.phaseTitle + " Implementation</h1>");
         mainPanel.add(titleElement);
+        this.logger = Logger.getLogger("MyWebApp");
     }
     
     @Override

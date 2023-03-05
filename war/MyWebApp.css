@@ -41,3 +41,11 @@ h1 {
 .switcherButton {
   margin: 10px !important;
 }
+
+.margin {
+  margin: 10px !important;
+}
+
+.padding {
+  padding: 10px !important;
+}
