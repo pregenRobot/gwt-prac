@@ -32,3 +32,12 @@ h1 {
 #closeButton {
   margin: 15px 6px 6px;
 }
+
+
+#switcher {
+  margin-top: 20px;
+}
+
+.switcherButton {
+  margin: 10px !important;
+}
