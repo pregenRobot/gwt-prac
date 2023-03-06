@@ -19,9 +19,6 @@ import java.util.logging.*;
 public class GreetingServiceImpl extends RemoteServiceServlet implements
     GreetingService {
 
-  
-
-
   HashMap<String, Thread> threads = new HashMap<>();
   int id = 0;
 

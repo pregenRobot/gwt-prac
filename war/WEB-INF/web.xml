@@ -10,10 +10,19 @@
     <servlet-name>greetServlet</servlet-name>
     <servlet-class>com.mycompany.mywebapp.server.GreetingServiceImpl</servlet-class>
   </servlet>
+  <servlet>
+    <servlet-name>timeAndClockServlet</servlet-name>
+    <servlet-class>com.mycompany.mywebapp.server.TimeAndClockImpl</servlet-class>
+  </servlet>
   
   <servlet-mapping>
     <servlet-name>greetServlet</servlet-name>
     <url-pattern>/mywebapp/greet</url-pattern>
+  </servlet-mapping>
+
+  <servlet-mapping>
+    <servlet-name>timeAndClockServlet</servlet-name>
+    <url-pattern>/mywebapp/timeandclock</url-pattern>
   </servlet-mapping>
   
   <!-- Default page to serve -->

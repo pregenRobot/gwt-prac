@@ -1,6 +1,8 @@
 package com.mycompany.mywebapp.client.widgets;
 
 import com.google.gwt.user.client.ui.Composite;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import com.google.gwt.dom.client.HeadingElement;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -21,87 +23,156 @@ import com.mycompany.mywebapp.client.TimeAndClockServiceAsync;
 import com.mycompany.mywebapp.shared.FieldVerifier;
 import com.mycompany.mywebapp.shared.TACSMessage;
 
-public class Phase2 extends PhasePane{
+public class Phase2 extends PhasePane {
 
-  private static final String SERVER_ERROR = "An error occurred while "
-      + "attempting to contact the server. Please check your network "
-      + "connection and try again.";
-
-
-    DialogBox clientLogDialogBox;
-
-    private void log(String message,String color){
-      HTML logMessage = new HTML("<div style='"+color+";'>" + message + " </div>");
-      
-      clientLogDialogBox.add(logMessage);
-    }
-
-    public Phase2(TimeAndClockServiceAsync timeAndClock){
-
-        super("Phase 2 Message Passing System");
+  private static final String SERVER_ERROR =
+      "An error occurred while " + "attempting to contact the server. Please check your network "
+          + "connection and try again.";
 
 
-        final Button sendButton = new Button("Send");
-        final Button receiveButton = new Button("Receive");
-
-        int pid = 10;
-
-        final HTML myProcessIdDisplayer =  new HTML("<h3>My process ID is: " + pid +  "<h3>");
-
-        final TextBox messageTextBox = new TextBox();
-        final HTML messageTextBoxLabel = new HTML("<h4>Message to send</h4>");
-        messageTextBox.setText("Hello!");
-
-        final TextBox processIdTextBox = new TextBox();
-        final HTML processIdTextBoxLabel = new HTML("<h4>Target process ID</h4>");
+  VerticalPanel logVPanel;
+  Integer pid;
+  Button registrationButton;
+  boolean registered = false;
 
 
-        clientLogDialogBox = new DialogBox();
-        clientLogDialogBox.setText("Client Log");
-        clientLogDialogBox.setAnimationEnabled(true);
-        VerticalPanel dialogVPanel = new VerticalPanel();
-        clientLogDialogBox.add(dialogVPanel);
+  private void log(String message, String color) {
+    HTML logMessage = new HTML("<div style='color:" + color + ";'>" + message + " </div>");
 
-        final HorizontalPanel buttons = new HorizontalPanel();
-        buttons.add(sendButton);
-        buttons.add(receiveButton);
+    logVPanel.add(logMessage);
+  }
+
+  @Override
+  protected void onUnload() {
+    // TODO Auto-generated method stub
+    super.onUnload();
+    
+
+  }
+
+  public Phase2(TimeAndClockServiceAsync timeAndClock) {
+
+    super("Phase 2 Message Passing System");
 
 
-        mainPanel.add(myProcessIdDisplayer);
-        mainPanel.add(messageTextBoxLabel);
-        mainPanel.add(messageTextBox);
-        mainPanel.add(processIdTextBoxLabel);
-        mainPanel.add(processIdTextBox);
-        mainPanel.add(buttons);
-        mainPanel.add(clientLogDialogBox);
+    final Button sendButton = new Button("Send");
+    final Button receiveButton = new Button("Receive");
+    registrationButton = new Button("Register");
 
 
-        receiveButton.addClickHandler(new ClickHandler(){
 
+    final TextBox messageTextBox = new TextBox();
+    final HTML messageTextBoxLabel = new HTML("<h4>Message to send</h4>");
+    messageTextBox.setText("Hello!");
+
+    final TextBox processIdTextBox = new TextBox();
+    final HTML processIdTextBoxLabel = new HTML("<h4>Target process ID</h4>");
+
+
+    DialogBox clientLogDialogBox = new DialogBox();
+    clientLogDialogBox.setText("Client Log");
+    clientLogDialogBox.setAnimationEnabled(true);
+    logVPanel = new VerticalPanel();
+    clientLogDialogBox.add(logVPanel);
+
+    final HorizontalPanel buttons = new HorizontalPanel();
+    buttons.add(sendButton);
+    buttons.add(receiveButton);
+
+
+
+    mainPanel.add(registrationButton);
+    mainPanel.add(messageTextBoxLabel);
+    mainPanel.add(messageTextBox);
+    mainPanel.add(processIdTextBoxLabel);
+    mainPanel.add(processIdTextBox);
+    mainPanel.add(buttons);
+    mainPanel.add(clientLogDialogBox);
+
+
+    registrationButton.addClickHandler(new ClickHandler() {
+
+      @Override
+      public void onClick(ClickEvent event) {
+        timeAndClock.registration(new AsyncCallback<String>() {
           @Override
-          public void onClick(ClickEvent event){
-            //pass
+          public void onSuccess(String result) {
+            log("Registered with the Server", "green");
+            registrationButton.setText("My Pid: " + Integer.valueOf(result));
+            registrationButton.setEnabled(false);
+            registered = true;
+            pid = Integer.valueOf(result);
           }
 
+          @Override
+          public void onFailure(Throwable caught) {
+            // TODO Auto-generated method stub
+            log(caught.getMessage() + caught.getCause(), "red");
+            pid = -1;
+          }
         });
+      }
 
-        sendButton.addClickHandler(new ClickHandler(){
+    });
+
+    receiveButton.addClickHandler(new ClickHandler() {
+
+      @Override
+      public void onClick(ClickEvent event) {
+        timeAndClock.fetchMyMessage(pid, new AsyncCallback<TACSMessage>() {
 
           @Override
-          public void onClick(ClickEvent event){
-            TACSMessage tacsMessage = new TACSMessage();
-            tacsMessage.message = messageTextBox.getText();
-            tacsMessage.sourcePid = pid;
+          public void onFailure(Throwable caught) {
+            log(caught.getMessage() + caught.getCause(), "red");
+          }
 
-            Integer targetPid;
+          @Override
+          public void onSuccess(TACSMessage result) {
+            log(result.getLogMessage(), "black");
+          }
+        });
+      }
+    });
 
-            try{
-              targetPid = Integer.parseInt(processIdTextBox.getText());
-            }catch(Exception e){
-              log("Target Pid cannot be coersced into an Integer","red");
+    sendButton.addClickHandler(new ClickHandler() {
+
+      @Override
+      public void onClick(ClickEvent event) {
+
+        if (!registered) {
+          log("Please register with the server first by clicking the register button", "red");
+          return;
+        }
+
+
+        TACSMessage tacsMessage = new TACSMessage();
+        tacsMessage.message = messageTextBox.getText();
+        tacsMessage.sourcePid = pid;
+        Integer targetPid;
+
+        try {
+          targetPid = Integer.parseInt(processIdTextBox.getText());
+          tacsMessage.targetPid = targetPid;
+
+          long sendTime = System.currentTimeMillis() / 1000L;
+          tacsMessage.sendTime = sendTime;
+          timeAndClock.sendMessage(tacsMessage, new AsyncCallback<String>() {
+
+            public void onFailure(Throwable caught) {
+
+              log("Unable to send. Exception Raised: " + caught, "red");
             }
-          }
-        });
-    }
+
+            public void onSuccess(String result) {
+
+              log("Sent message at @" + sendTime, "green");
+            }
+          });
+        } catch (Exception e) {
+          log("Target Pid cannot be coersced into an Integer", "red");
+        }
+      }
+    });
+  }
 
 }
