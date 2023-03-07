@@ -12,6 +12,7 @@ import org.eclipse.jetty.io.ssl.ALPNProcessor.Server;
 import java.util.Deque;
 import java.util.logging.Logger;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 @SuppressWarnings("serial")
 public class TimeAndClockImpl extends RemoteServiceServlet implements TimeAndClockService {
@@ -69,7 +70,13 @@ public class TimeAndClockImpl extends RemoteServiceServlet implements TimeAndClo
 	}
 
 	@Override
-	public String deRegistration(String pid) {
+	public String deRegistration(Integer pid) throws IllegalArgumentException{
+		if(!pidToPoolmapping.containsKey(pid)){
+			throw new IllegalArgumentException("Already deregistered");
+		}
+		pidToPoolmapping.remove(pid);
+		logger.info("Removed Pid from active clients: " + pid);
+		return "OK";
 	}
 
 	@Override
@@ -77,7 +84,7 @@ public class TimeAndClockImpl extends RemoteServiceServlet implements TimeAndClo
 		// return ",".join(pidToPoolmapping.keySet())
 		ServerState serverState = new ServerState();
 		serverState.availableClients = new ArrayList<Integer>(pidToPoolmapping.keySet());
-		return serverState
+		return serverState;
 	}
 
     

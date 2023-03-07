@@ -10,6 +10,7 @@ import com.google.gwt.user.client.ui.RootPanel;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Map;
+import com.mycompany.mywebapp.client.*;
 
 /**
  * Entry point classes define <code>onModuleLoad()</code>.

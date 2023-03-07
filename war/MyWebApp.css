@@ -46,6 +46,22 @@ h1 {
   margin: 10px !important;
 }
 
+.horizontal-margin {
+  margin-left: 100px !important;
+  margin-right: 100px !important;
+  width:100px;
+}
+
+
+.width-250 {
+  width: 250px;
+}
+
+.flex-item {
+  width: 50%;
+}
+
+
 .padding {
   padding: 10px !important;
 }

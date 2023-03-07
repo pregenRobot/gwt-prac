@@ -3,12 +3,14 @@ package com.mycompany.mywebapp.client.widgets;
 import com.google.gwt.user.client.ui.Composite;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import com.gargoylesoftware.htmlunit.javascript.host.dom.Text;
 import com.google.gwt.dom.client.HeadingElement;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.KeyCodes;
 import com.google.gwt.event.dom.client.KeyUpEvent;
 import com.google.gwt.event.dom.client.KeyUpHandler;
+import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.DialogBox;
@@ -21,6 +23,7 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 import com.mycompany.mywebapp.client.GreetingServiceAsync;
 import com.mycompany.mywebapp.client.TimeAndClockServiceAsync;
 import com.mycompany.mywebapp.shared.FieldVerifier;
+import com.mycompany.mywebapp.shared.ServerState;
 import com.mycompany.mywebapp.shared.TACSMessage;
 
 public class Phase2 extends PhasePane {
@@ -34,7 +37,10 @@ public class Phase2 extends PhasePane {
   Integer pid;
   Button registrationButton;
   boolean registered = false;
-
+  TimeAndClockServiceAsync timeAndClock;
+  ServerState serverState;
+  HorizontalPanel availableClientsPanel;
+  TextBox processIdTextBox;
 
   private void log(String message, String color) {
     HTML logMessage = new HTML("<div style='color:" + color + ";'>" + message + " </div>");
@@ -42,18 +48,77 @@ public class Phase2 extends PhasePane {
     logVPanel.add(logMessage);
   }
 
+  private void refreshAvailableClients(){
+    timeAndClock.fetchActiveClients(new AsyncCallback<ServerState>() {
+
+      @Override
+      public void onFailure(Throwable caught) {
+        // TODO Auto-generated method stub
+        log("Failed to fetch all available clients", "red");
+      }
+
+      @Override
+      public void onSuccess(ServerState result) {
+        // TODO Auto-generated method stub
+        availableClientsPanel.clear();
+        logger.info("received server state!");
+        for (Integer target : result.availableClients){
+          Button targetButton = new Button();
+          targetButton.setText("" + target);
+          targetButton.addClickHandler(new ClickHandler() {
+
+            @Override
+            public void onClick(ClickEvent event) {
+              processIdTextBox.setText(((Button)event.getSource()).getText());
+            }
+          });
+          availableClientsPanel.add(targetButton);
+        }
+      }
+
+    });
+
+  };
+
   @Override
   protected void onUnload() {
     // TODO Auto-generated method stub
-    super.onUnload();
-    
+    timeAndClock.deRegistration(pid, new AsyncCallback<String>() {
 
+      @Override
+      public void onFailure(Throwable caught) {
+        // TODO Auto-generated method stub
+        // ignore
+      }
+
+      @Override
+      public void onSuccess(String result) {
+        // TODO Auto-generated method stub
+        // ignore
+      }
+      
+    });
+    super.onUnload();
+  }
+
+  @Override
+  protected void onLoad() {
+    // TODO Auto-generated method stub
+    super.onLoad();
+
+    Timer timer = new Timer() {
+      public void run(){
+        refreshAvailableClients();
+      }
+    };
+    timer.scheduleRepeating(1000);
   }
 
   public Phase2(TimeAndClockServiceAsync timeAndClock) {
 
     super("Phase 2 Message Passing System");
 
+    this.timeAndClock = timeAndClock;
 
     final Button sendButton = new Button("Send");
     final Button receiveButton = new Button("Receive");
@@ -61,11 +126,11 @@ public class Phase2 extends PhasePane {
 
 
 
-    final TextBox messageTextBox = new TextBox();
+    TextBox messageTextBox = new TextBox();
     final HTML messageTextBoxLabel = new HTML("<h4>Message to send</h4>");
     messageTextBox.setText("Hello!");
 
-    final TextBox processIdTextBox = new TextBox();
+    processIdTextBox = new TextBox();
     final HTML processIdTextBoxLabel = new HTML("<h4>Target process ID</h4>");
 
 
@@ -79,9 +144,16 @@ public class Phase2 extends PhasePane {
     buttons.add(sendButton);
     buttons.add(receiveButton);
 
+    final HTML availableClientsTextLabel = new HTML("<h4>Available Clients</h4>");
+    availableClientsPanel = new HorizontalPanel();
+    availableClientsPanel.add(availableClientsTextLabel);
+
 
 
     mainPanel.add(registrationButton);
+
+    mainPanel.add(availableClientsPanel);
+
     mainPanel.add(messageTextBoxLabel);
     mainPanel.add(messageTextBox);
     mainPanel.add(processIdTextBoxLabel);
@@ -128,7 +200,7 @@ public class Phase2 extends PhasePane {
 
           @Override
           public void onSuccess(TACSMessage result) {
-            log(result.getLogMessage(), "black");
+            log("PID: "+ result.sourcePid + " message: " + result.message + " sendTime:" + result.sendTime + " receiveTime: " + result.receiveTime, "black");
           }
         });
       }
